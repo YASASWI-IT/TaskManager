@@ -1,0 +1,355 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: tasks
+    description: Task management operations
+  - name: dashboard
+    description: Dashboard and system status operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /health:
+    get:
+      operationId: getSystemHealth
+      tags: [health]
+      summary: Get system health
+      responses:
+        "200":
+          description: System health
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemHealth"
+  /tasks:
+    get:
+      operationId: listTasks
+      tags: [tasks]
+      summary: List tasks
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, scheduled, upcoming, completed, overdue]
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: Task list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+    post:
+      operationId: createTask
+      tags: [tasks]
+      summary: Create a task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskInput"
+      responses:
+        "201":
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: Validation error
+  /tasks/due:
+    get:
+      operationId: listDueTasks
+      tags: [tasks]
+      summary: List tasks currently due for reminder
+      responses:
+        "200":
+          description: Due tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+  /tasks/{id}:
+    get:
+      operationId: getTask
+      tags: [tasks]
+      summary: Get a task
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "200":
+          description: Task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          description: Task not found
+    put:
+      operationId: updateTask
+      tags: [tasks]
+      summary: Update a task
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdate"
+      responses:
+        "200":
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: Validation error
+        "404":
+          description: Task not found
+    delete:
+      operationId: deleteTask
+      tags: [tasks]
+      summary: Delete a task
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "204":
+          description: Task deleted
+        "404":
+          description: Task not found
+  /tasks/{id}/complete:
+    post:
+      operationId: completeTask
+      tags: [tasks]
+      summary: Mark a task completed
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "200":
+          description: Completed task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          description: Task not found
+        "409":
+          description: Task is already completed
+  /tasks/{id}/reschedule:
+    post:
+      operationId: rescheduleTask
+      tags: [tasks]
+      summary: Reschedule a task
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskSchedule"
+      responses:
+        "200":
+          description: Rescheduled task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: Validation error
+        "404":
+          description: Task not found
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+components:
+  parameters:
+    TaskId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    Task:
+      type: object
+      required:
+        - id
+        - description
+        - scheduledDate
+        - scheduledTime
+        - scheduledAt
+        - status
+        - createdAt
+        - updatedAt
+        - completedAt
+      properties:
+        id:
+          type: integer
+        description:
+          type: string
+        scheduledDate:
+          type: string
+        scheduledTime:
+          type: string
+        scheduledAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [scheduled, completed, overdue]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: [string, "null"]
+          format: date-time
+        reminderAcknowledged:
+          type: boolean
+    TaskInput:
+      type: object
+      required:
+        - description
+        - scheduledDate
+        - scheduledTime
+      properties:
+        description:
+          type: string
+          minLength: 1
+        scheduledDate:
+          type: string
+        scheduledTime:
+          type: string
+    TaskUpdate:
+      type: object
+      properties:
+        description:
+          type: string
+          minLength: 1
+        scheduledDate:
+          type: string
+        scheduledTime:
+          type: string
+    TaskSchedule:
+      type: object
+      required:
+        - scheduledDate
+        - scheduledTime
+      properties:
+        scheduledDate:
+          type: string
+        scheduledTime:
+          type: string
+    DashboardSummary:
+      type: object
+      required:
+        - scheduled
+        - completed
+        - overdue
+        - dueSoon
+        - upcoming
+        - recentlyCompleted
+      properties:
+        scheduled:
+          type: integer
+        completed:
+          type: integer
+        overdue:
+          type: integer
+        dueSoon:
+          type: integer
+        upcoming:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        recentlyCompleted:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+    SystemHealth:
+      type: object
+      required:
+        - status
+        - scheduler
+        - database
+        - lastEndpoint
+        - lastStatusCode
+        - lastResponseAt
+      properties:
+        status:
+          type: string
+          enum: [online, offline]
+        scheduler:
+          type: string
+          enum: [running, stopped]
+        database:
+          type: string
+          enum: [connected, disconnected]
+        lastEndpoint:
+          type: string
+        lastStatusCode:
+          type: integer
+        lastResponseAt:
+          type: string
+          format: date-time
+        responseDurationMs:
+          type: [number, "null"]
+

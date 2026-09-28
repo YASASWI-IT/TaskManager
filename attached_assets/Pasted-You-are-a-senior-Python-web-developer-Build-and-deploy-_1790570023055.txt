@@ -1,0 +1,168 @@
+You are a senior Python web developer. Build and deploy a production-ready Flask web application named “QC-TaskManager”.
+
+## Product purpose
+
+QC-TaskManager is a task scheduling and management dashboard for quality-control teams. Users can create tasks with a scheduled date and time, view upcoming and completed work, edit or reschedule tasks, delete tasks, and receive an in-page reminder when a scheduled task becomes due.
+
+## Required technology
+
+Use:
+
+- Python 3
+- Flask
+- Bootstrap 5
+- SQLite using Python’s built-in sqlite3 module
+- Jinja2 templates
+- Vanilla JavaScript
+- APScheduler or an equivalent reliable background scheduling mechanism
+- Gunicorn for production serving
+
+Do not use React, Node.js, PostgreSQL, MongoDB, or a separate frontend framework.
+
+## Core functionality
+
+### 1. Task CRUD
+
+Each task must support:
+
+- Create
+- Read
+- Update
+- Reschedule
+- Mark as completed
+- Delete
+
+Each task should contain:
+
+- id
+- task title or description
+- scheduled date
+- scheduled time
+- combined scheduled datetime
+- status: scheduled, completed, or overdue
+- created timestamp
+- updated timestamp
+- completed timestamp, when applicable
+
+Validate that:
+
+- The task description is required.
+- The scheduled date and time are required.
+- Invalid or past scheduling values are handled clearly.
+- All user input is safely parameterized before database insertion.
+- Delete actions require confirmation.
+
+### 2. Job queue and scheduling
+
+Implement a persistent background scheduling system.
+
+Requirements:
+
+- Add every scheduled task to a background job queue.
+- Persist task data in SQLite so tasks remain available after application restarts.
+- When the scheduled time is reached, identify the task as due.
+- Prevent duplicate reminders for the same task.
+- A due task must be available through an API endpoint used by the browser.
+- The scheduler must not create duplicate jobs when a task is edited or rescheduled.
+- Editing or rescheduling a task must replace its previous scheduled job.
+- Deleting a task must remove its scheduled job.
+- Completing a task must prevent future reminders.
+- Store the scheduler/job identifier in the database if needed.
+- Use a single scheduler process or configure deployment to avoid duplicate scheduler workers.
+
+Use a simple, reliable implementation suitable for a small production application. A persistent APScheduler job store backed by SQLite is acceptable, or implement a SQLite-backed polling queue if that is more reliable with the selected deployment setup.
+
+### 3. Task reminders
+
+When a task becomes due:
+
+- Show a Bootstrap modal or prominent Bootstrap alert inside the live dashboard.
+- Use the browser Notification API when permission is available.
+- Fall back to the in-page Bootstrap reminder when browser notifications are unavailable.
+- Do not show the same reminder repeatedly after it has been acknowledged.
+- Provide actions to:
+  - Mark the task complete
+  - Snooze or reschedule the task
+  - Dismiss the reminder
+
+The browser should poll the due-task endpoint every few seconds without requiring a full page reload.
+
+### 4. Dashboard
+
+Create a responsive Bootstrap dashboard showing:
+
+- Total scheduled tasks
+- Total completed tasks
+- Total overdue tasks
+- Upcoming tasks
+- Tasks due soon
+- Recently completed tasks
+
+Include a clear task list with:
+
+- Task description
+- Scheduled date
+- Scheduled time
+- Status badge
+- Edit button
+- Reschedule button
+- Complete button
+- Delete button
+
+Add filtering by:
+
+- All
+- Scheduled
+- Upcoming
+- Completed
+- Overdue
+
+Add search by task description.
+
+Use clear empty states when there are no matching tasks.
+
+## HTTP status and live response display
+
+Include a visible “System Status” area on the dashboard.
+
+Implement these endpoints:
+
+- `GET /health`
+- `GET /api/tasks`
+- `POST /api/tasks`
+- `GET /api/tasks/<id>`
+- `PUT /api/tasks/<id>`
+- `DELETE /api/tasks/<id>`
+- `POST /api/tasks/<id>/complete`
+- `POST /api/tasks/<id>/reschedule`
+- `GET /api/tasks/due`
+- `GET /api/dashboard/summary`
+
+The live status area should display:
+
+- Application health: Online or Offline
+- Scheduler status
+- SQLite/database status
+- Last API endpoint called
+- Last HTTP response status code
+- Last response timestamp
+- Optional response duration in milliseconds
+
+Use meaningful HTTP status codes:
+
+- 200 for successful reads and updates
+- 201 for successful creation
+- 204 for successful deletion where appropriate
+- 400 for validation errors
+- 404 for missing tasks
+- 409 for invalid state conflicts
+- 500 for unexpected server errors
+
+Return consistent JSON for API responses, for example:
+
+```json
+{
+  "success": true,
+  "message": "Task created successfully",
+  "data": {}
+}

@@ -1,0 +1,1 @@
+- [Generated client TypeScript](generated-client-typescript.md) — DOM iterable types may be needed when the generated fetch client enumerates Headers.

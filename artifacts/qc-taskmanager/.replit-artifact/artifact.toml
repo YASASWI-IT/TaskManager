@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "QC TaskManager"
+description = "A production-ready quality-control task scheduling dashboard with CRUD task management, due reminders, rescheduling, completion tracking, filtering, search, and live system status visibility."
+version = "1.0.0"
+id = "artifacts/qc-taskmanager"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22673
+
+[services.development]
+run = "pnpm --filter @workspace/qc-taskmanager run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/qc-taskmanager", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/qc-taskmanager/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22673"
+BASE_PATH = "/"
